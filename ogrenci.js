@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("./db");// Veritabanı bağlantısı için db dosyası çağrılır
+const mail = require("./mail");
+const fs = require("fs")
 
 
 //tum ogrenci bilgieri cekiliyor
@@ -94,6 +96,25 @@ router.put("/update/:id",   (req, res) => {
       res.status(200).send({ message: 'Öğrenci başarıyla güncellendi' });
     }
   });
+});
+
+router.post("/save",  (req, res) => {
+  const query = "SELECT * FROM ogrenci";
+  pool.query(query, (err, result) => {
+    if (err) {
+      res.status(500).send(err.message);
+    } else {
+      if (result.rows.length === 0){
+        res.status(500).send({message: "Ogrenci kaydi bulunamadi."})
+      }else{
+        res.status(200).send({ message: 'Öğrenci bilgileri başarıyla kaydedildi.', result: result.rows});
+        fs.writeFile('ogrenciList.json', JSON.stringify(result.rows), function(err){
+          if (err) {console.log(err)} else mail.sendEmail();
+        });
+        
+      }
+    }
+});
 });
 
 // Öğrenci silme
